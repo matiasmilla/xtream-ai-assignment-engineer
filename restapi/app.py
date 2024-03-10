@@ -41,14 +41,17 @@ def predict_one(json_data: Features):
 @app.post('/predict_many')
 def predict_many(json_data: FeaturesList):
     df = pd.DataFrame(json_data.data)
+    df.set_index('id', inplace=True)
     df['size'] = df['x']*df['y']*df['z']
     df.drop(['x', 'y', 'z'], axis=1, inplace=True)
     df[['color', 'clarity']] = encoder.transform(df[['color', 'clarity']])
     # reorder features for model
     df = df[['size', 'color', 'clarity']]
-    df = scaler.transform(df)
-    predictions = model.predict(df)
-    return {'results': list(map(int, predictions))}
+    features = scaler.transform(df)
+    predictions = model.predict(features)
+    int_prices = list(map(int, predictions))
+    results = dict(zip(df.index, int_prices))
+    return {'results': results}
 
 if __name__ == '__main__':
     uvicorn.run(app, host='localhost', port=8000)
