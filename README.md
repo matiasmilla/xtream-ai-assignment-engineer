@@ -82,4 +82,14 @@ So, ready to add some sparkle to this challenge? Let's make these diamonds shine
 ---
 
 ## How to run
-Please fill this section as part of the assignment.
+
+### Challenge 1
+Create a conda environment with the following command:
+```
+$ conda create --name xtream --file requirements.txt -c conda-forge
+```
+The notebook is diamond_price_prediction.ipynb. Just activate the enviroment and start jupyter notebook server with:
+```
+$ conda activate xtream
+$ jupyter-notebook
+```
