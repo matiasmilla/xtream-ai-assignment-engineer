@@ -10,6 +10,7 @@ import uvicorn
 
 app = FastAPI()
 
+encoder = joblib.load('../encoder.sav')
 scaler = joblib.load('../scaler.sav')
 model = XGBRegressor()
 model.load_model('../diamonds_model.json')
@@ -18,20 +19,18 @@ class Features(BaseModel):
     x: float
     y: float
     z: float
-    color: float
-    clarity: float
+    color: str
+    clarity: str
 
 @app.post('/predict')
 def predict(json_data: Features):
-    size = [json_data.x*json_data.y*json_data.z]
-    color = [json_data.color]
-    clarity = [json_data.clarity]
     parameters = {
-        'size': size,
-        'color': color,
-        'clarity': clarity
+        'size': [json_data.x*json_data.y*json_data.z],
+        'color': [json_data.color],
+        'clarity': [json_data.clarity]
     }
     df = pd.DataFrame.from_dict(parameters)
+    df[['color', 'clarity']] = encoder.transform(df[['color', 'clarity']])
     df = scaler.transform(df)
     prediction = model.predict(df)
     return {'price': int(prediction[0])}
