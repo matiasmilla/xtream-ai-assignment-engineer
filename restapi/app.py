@@ -25,23 +25,7 @@ class Features(BaseModel):
 class FeaturesList(BaseModel):
     data: list
 
-@app.post('/predict_one')
-def predict_one(json_data: Features):
-    parameters = {
-        'size': [json_data.x*json_data.y*json_data.z],
-        'color': [json_data.color],
-        'clarity': [json_data.clarity]
-    }
-    df = pd.DataFrame.from_dict(parameters)
-    df[['color', 'clarity']] = encoder.transform(df[['color', 'clarity']])
-    df = scaler.transform(df)
-    prediction = model.predict(df)
-    return {'price': int(prediction[0])}
-
-@app.post('/predict_many')
-def predict_many(json_data: FeaturesList):
-    df = pd.DataFrame(json_data.data)
-    df.set_index('id', inplace=True)
+def process_data(df):
     df['size'] = df['x']*df['y']*df['z']
     df.drop(['x', 'y', 'z'], axis=1, inplace=True)
     df[['color', 'clarity']] = encoder.transform(df[['color', 'clarity']])
@@ -50,6 +34,26 @@ def predict_many(json_data: FeaturesList):
     features = scaler.transform(df)
     predictions = model.predict(features)
     int_prices = list(map(int, predictions))
+    return int_prices
+
+@app.post('/predict_one')
+def predict_one(json_data: Features):
+    parameters = {
+        'x': [json_data.x],
+        'y': [json_data.y],
+        'z': [json_data.z],
+        'color': [json_data.color],
+        'clarity': [json_data.clarity]
+    }
+    df = pd.DataFrame.from_dict(parameters)
+    price = process_data(df)[0]
+    return {'price': price}
+
+@app.post('/predict_many')
+def predict_many(json_data: FeaturesList):
+    df = pd.DataFrame(json_data.data)
+    df.set_index('id', inplace=True)
+    int_prices = process_data(df)
     results = dict(zip(df.index, int_prices))
     return {'results': results}
 
