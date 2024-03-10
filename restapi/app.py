@@ -22,8 +22,11 @@ class Features(BaseModel):
     color: str
     clarity: str
 
-@app.post('/predict')
-def predict(json_data: Features):
+class FeaturesList(BaseModel):
+    data: list
+
+@app.post('/predict_one')
+def predict_one(json_data: Features):
     parameters = {
         'size': [json_data.x*json_data.y*json_data.z],
         'color': [json_data.color],
@@ -35,5 +38,17 @@ def predict(json_data: Features):
     prediction = model.predict(df)
     return {'price': int(prediction[0])}
 
+@app.post('/predict_many')
+def predict_many(json_data: FeaturesList):
+    df = pd.DataFrame(json_data.data)
+    df['size'] = df['x']*df['y']*df['z']
+    df.drop(['x', 'y', 'z'], axis=1, inplace=True)
+    df[['color', 'clarity']] = encoder.transform(df[['color', 'clarity']])
+    # reorder features for model
+    df = df[['size', 'color', 'clarity']]
+    df = scaler.transform(df)
+    predictions = model.predict(df)
+    return {'results': list(map(int, predictions))}
+
 if __name__ == '__main__':
-    uvicorn.run(app, host='localhost', port=1984)
+    uvicorn.run(app, host='localhost', port=8000)
