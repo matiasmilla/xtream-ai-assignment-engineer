@@ -101,18 +101,18 @@ $ cd restapi
 $ uvicorn app:app --reload
 ```
 
-The API has three enpoints:
+The API has three endpoints:
 * predict_one: receives a JSON containing the features (x, y, z, color, clarity). All the features are mandatory. Example command:
 ```
-curl -X POST localhost:8000/predict_one --data '{"x":2, "y":3, "z":4, "color":"H", "clarity":"SI1"}' -H "accept: application/json" -H "Content-Type: application/json"
+curl -X POST http://localhost:8000/predict_one --data '{"x":2, "y":3, "z":4, "color":"H", "clarity":"SI1"}' -H "accept: application/json" -H "Content-Type: application/json"
 ```
 The response is a JSON with an only one key called "price". Example: {"price":5}.
-* predict_many: receives a JSON containing a key called "data" and inside it a list with the features and their IDs. The IDs are mandatory in order to help the web developer with the price-id mapping. Example command:
+* predict_many: receives a JSON containing a key called "data" and inside it a list, with the features and their IDs. The IDs are mandatory in order to help the web developer with the price-id mapping. All the features are mandatory. Example command:
 ```
-$ curl -X POST localhost:8000/predict_many --data '{"data":[{"id": 2, "x":2, "y":3, "z":4, "color":"H", "clarity":"SI1"}, {"id": 1, "x": 1, "y": 1, "z": "50", "color":"F", "clarity": "VS2"}]}' -H "accept: application/json" -H "Content-Type: application/json"
+$ curl -X POST http://localhost:8000/predict_many --data '{"data":[{"id": 2, "x":2, "y":3, "z":4, "color":"H", "clarity":"SI1"}, {"id": 1, "x": 1, "y": 1, "z": "50", "color":"F", "clarity": "VS2"}]}' -H "accept: application/json" -H "Content-Type: application/json"
 ```
-The response has a key called "results". Its calues is a JSON object containing the IDs as the keys and their respective predictions as values. Example: {"results":{"2":5,"1":6}}.
-* predict_many_csv: receives a CSV file containing the features and the IDs. As in predict_many, IDs are mandatory. Example command:
+The response has a key called "results". Its values is a JSON object containing the IDs as the keys and their respective predictions as values. Example: {"results":{"2":5,"1":6}}.
+* predict_many_csv: receives a CSV file containing the features and the IDs. As in predict_many, IDs and features are mandatory. Example command:
 ```
 curl -X POST -H "Content-type: multipart/form-data" -F "file=@data.csv;type=text/csv" http://localhost:8000/predict_many_csv
 ```
