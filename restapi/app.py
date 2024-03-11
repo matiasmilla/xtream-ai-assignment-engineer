@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from io import StringIO
 import joblib
 from sklearn.preprocessing import TargetEncoder, StandardScaler
 import json
@@ -37,7 +39,7 @@ def process_data(df):
     return int_prices
 
 @app.post('/predict_one')
-def predict_one(json_data: Features):
+async def predict_one(json_data: Features):
     parameters = {
         'x': [json_data.x],
         'y': [json_data.y],
@@ -50,12 +52,27 @@ def predict_one(json_data: Features):
     return {'price': price}
 
 @app.post('/predict_many')
-def predict_many(json_data: FeaturesList):
+async def predict_many(json_data: FeaturesList):
     df = pd.DataFrame(json_data.data)
     df.set_index('id', inplace=True)
     int_prices = process_data(df)
     results = dict(zip(df.index, int_prices))
     return {'results': results}
+
+@app.post('/predict_many_csv')
+async def predict_many_csv(file: UploadFile = File(...)):
+    if file.content_type != 'text/csv':
+        return {"error": "input must be a csv file"}
+    content = await file.read()
+    content = content.decode()
+    df = pd.read_csv(StringIO(content))
+    prices = process_data(df.copy())
+    df['price'] = prices
+    stream = StringIO()
+    df.to_csv(stream, index=False)
+    response = StreamingResponse(iter([stream.getvalue()]), media_type='text/csv')
+    response.headers['Content-Disposition'] = 'attachment; filename=prices.csv'
+    return response
 
 if __name__ == '__main__':
     uvicorn.run(app, host='localhost', port=8000)

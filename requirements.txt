@@ -7,3 +7,4 @@ matplotlib==3.8.3
 # challenge 3
 fastapi==0.110.0
 uvicorn==0.28.0
+python-multipart=0.0.9
