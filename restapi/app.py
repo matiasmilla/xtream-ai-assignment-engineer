@@ -18,6 +18,7 @@ model = XGBRegressor()
 model.load_model('../diamonds_model.json')
 
 class Features(BaseModel):
+    id: int | None = None
     x: float
     y: float
     z: float
@@ -25,7 +26,10 @@ class Features(BaseModel):
     clarity: str
 
 class FeaturesList(BaseModel):
-    data: list
+    data: list[Features]
+
+    def to_list(self):
+        return list(map(dict, self.data))
 
 def process_data(df):
     df['size'] = df['x']*df['y']*df['z']
@@ -53,7 +57,10 @@ async def predict_one(json_data: Features):
 
 @app.post('/predict_many')
 async def predict_many(json_data: FeaturesList):
-    df = pd.DataFrame(json_data.data)
+    df = pd.DataFrame(json_data.to_list())
+    null_ids = df['id'].isnull().sum() > 0
+    if null_ids:
+        return {'error': 'IDs are mandatory. Please add them as a field in your JSON'}
     df.set_index('id', inplace=True)
     int_prices = process_data(df)
     results = dict(zip(df.index, int_prices))
@@ -62,10 +69,16 @@ async def predict_many(json_data: FeaturesList):
 @app.post('/predict_many_csv')
 async def predict_many_csv(file: UploadFile = File(...)):
     if file.content_type != 'text/csv':
-        return {"error": "input must be a csv file"}
+        return {"error": "Input must be a csv file"}
     content = await file.read()
     content = content.decode()
     df = pd.read_csv(StringIO(content))
+    features = {'id', 'x', 'y', 'z', 'color', 'clarity'}
+    if set(df.columns) != features:
+        return {'error': f"These features are missing: {features-set(df.columns)}"}
+    null_values = df.isnull().sum().sum()
+    if null_values > 0:
+        return {'error': f"There are {null_values} null values in the file. Please check them"}
     prices = process_data(df.copy())
     df['price'] = prices
     stream = StringIO()
