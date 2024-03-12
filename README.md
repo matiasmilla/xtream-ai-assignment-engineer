@@ -112,7 +112,7 @@ $ uvicorn app:app --reload
 The API has three endpoints:
 * predict_one: receives a JSON containing the features (x, y, z, color, clarity). All the features are mandatory. Example command:
 ```
-curl -X POST http://localhost:8000/predict_one --data '{"x":2, "y":3, "z":4, "color":"H", "clarity":"SI1"}' -H "accept: application/json" -H "Content-Type: application/json"
+$ curl -X POST http://localhost:8000/predict_one --data '{"x":2, "y":3, "z":4, "color":"H", "clarity":"SI1"}' -H "accept: application/json" -H "Content-Type: application/json"
 ```
 The response is a JSON with an only one key called "price". Example: {"price":5}.
 * predict_many: receives a JSON containing a key called "data" and inside it a list, with the features and their IDs. The IDs are mandatory in order to help the web developer with the price-id mapping. All the features are mandatory. Example command:
@@ -122,6 +122,16 @@ $ curl -X POST http://localhost:8000/predict_many --data '{"data":[{"id": 2, "x"
 The response has a key called "results". Its values is a JSON object containing the IDs as the keys and their respective predictions as values. Example: {"results":{"2":5,"1":6}}.
 * predict_many_csv: receives a CSV file containing the features and the IDs. As in predict_many, IDs and features are mandatory. Example command:
 ```
-curl -X POST -H "Content-type: multipart/form-data" -F "file=@data.csv;type=text/csv" http://localhost:8000/predict_many_csv
+$ curl -X POST -H "Content-type: multipart/form-data" -F "file=@data.csv;type=text/csv" http://localhost:8000/predict_many_csv
 ```
 The response is the same CSV file but with a new column called "price" with the predictions.
+
+### Challenge 4
+
+I'm going to choose GCP because a I finished some Coursera's MOOCs on that platform.
+Architecture
+1. Transactional data can be stored as CSVs in a data lake (Google Cloud Storage buckets).
+2. Using Google Cloud Dataflow we can run ETLs. The target would be a data warehouse (Google Cloud SQL) which is better than the datalake for exploding data because its scalibility, usability, etc.
+3. A luigi instance with all the train pipelines can be installed inside a Docker container (Google Compute Engine). Files (encoder, scaler, model) can be stored in a bucket (Google Cloud Storage). Alternatively, Google AI platform can be used for ML pipeline.
+4. Model's API deployment can be done with Google Cloud Run. On the other hand, Google AI platform's prediction service can be used for model deployment. Also, it isn't mandatory to train the model before deploying with Google AI platform, so the previous step remains independent
+5. Google Cloud Operations suite can be used for monitoring and logging.
