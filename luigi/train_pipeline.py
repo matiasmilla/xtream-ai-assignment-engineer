@@ -83,5 +83,28 @@ class GetTarget(luigi.Task):
         self.target = np.log(self.df[self.target_name])
         self.target.to_csv(self.output_file, sep=',', index=False)
 
+class DataSplitting(luigi.Task):
+    input_file = luigi.Parameter()
+    X_train_file = luigi.Parameter(default='X_train.csv')
+    X_test_file = luigi.Parameter(default='X_test.csv')
+    y_train_file = luigi.Parameter(default='y_train.csv')
+    y_test_file = luigi.Parameter(default='y_test.csv')
+
+    def requires(self):
+        return {"features": FeatureSelection(self.input_file), "target": GetTarget(self.input_file)}
+
+    def output(self):
+        return {'X_train_file': luigi.LocalTarget(self.X_train_file), 'X_test_file': luigi.LocalTarget(self.X_test_file),
+                'y_train_file': luigi.LocalTarget(self.y_train_file), 'y_test_file': luigi.LocalTarget(self.y_test_file)}
+
+    def run(self):
+        X = pd.read_csv(self.input()["features"].path)
+        y = pd.read_csv(self.input()["target"].path)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=84)
+        X_train.to_csv(self.X_train_file, index=False)
+        X_test.to_csv(self.X_test_file, index=False)
+        y_train.to_csv(self.y_train_file, index=False)
+        y_test.to_csv(self.y_test_file, index=False)
+
 if __name__ == "__main__":
     luigi.run()
