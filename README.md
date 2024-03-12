@@ -131,7 +131,7 @@ The response is the same CSV file but with a new column called "price" with the 
 I'm going to choose GCP because a I finished some Coursera's MOOCs on that platform.
 
 Architecture:
-![challenge4.png]()
+![Architecture](challenge4.png)
 
 1. Transactional data can be stored as CSVs in a data lake (Google Cloud Storage buckets).
 2. Using Google Cloud Dataflow we can run ETLs. The target would be a data warehouse (Google Cloud SQL) which is better than the datalake for exploding data because its scalibility, usability, etc.
