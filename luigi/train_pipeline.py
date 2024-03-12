@@ -5,6 +5,8 @@ import joblib
 import numpy as np
 from sklearn.model_selection import train_test_split
 from xgboost import XGBRegressor
+from sklearn.metrics import r2_score, mean_squared_error
+import csv
 
 class CleanData(luigi.Task):
     input_file = luigi.Parameter()
@@ -148,6 +150,30 @@ class TrainModel(luigi.Task):
         self.model = XGBRegressor(min_child_weight=1, max_depth=8, learning_rate=0.1, gamma=0.0)
         self.model.fit(X_train, y_train)
         self.model.save_model(self.model_file)
+
+class SaveMetrics(luigi.Task):
+    input_file = luigi.Parameter()
+    metrics_file = luigi.Parameter(default='metrics.csv')
+
+    def requires(self):
+        return {"model": TrainModel(self.input_file), "features": FeatureScaling(self.input_file), "target": DataSplitting(self.input_file)}
+
+    def run(self):
+        self.model = XGBRegressor()
+        self.model.load_model(self.input()["model"].path)
+        X_train = pd.read_csv(self.input()["features"]["X_train_file"].path)
+        y_train = pd.read_csv(self.input()["target"]["y_train_file"].path)
+        train_preds = self.model.predict(X_train)
+        r2_train = r2_score(y_train, train_preds)
+        mse_train = mean_squared_error(np.exp(y_train), np.exp(train_preds))
+        X_test = pd.read_csv(self.input()["features"]["X_test_file"].path)
+        y_test = pd.read_csv(self.input()["target"]["y_test_file"].path)
+        test_preds = self.model.predict(X_test)
+        r2_test = r2_score(y_test, test_preds)
+        mse_test = mean_squared_error(np.exp(y_test), np.exp(test_preds))
+        with open(self.metrics_file, "a+") as csv_file:
+            writer = csv.writer(csv_file, delimiter=',')
+            writer.writerow([r2_train, mse_train, r2_test, mse_test])
 
 if __name__ == "__main__":
     luigi.run()
