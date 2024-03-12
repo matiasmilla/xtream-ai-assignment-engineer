@@ -129,7 +129,10 @@ The response is the same CSV file but with a new column called "price" with the 
 ### Challenge 4
 
 I'm going to choose GCP because a I finished some Coursera's MOOCs on that platform.
-Architecture
+
+Architecture:
+![challenge4.png]()
+
 1. Transactional data can be stored as CSVs in a data lake (Google Cloud Storage buckets).
 2. Using Google Cloud Dataflow we can run ETLs. The target would be a data warehouse (Google Cloud SQL) which is better than the datalake for exploding data because its scalibility, usability, etc.
 3. A luigi instance with all the train pipelines can be installed inside a Docker container (Google Compute Engine). Files (encoder, scaler, model) can be stored in a bucket (Google Cloud Storage). Alternatively, Google AI platform can be used for ML pipeline.
