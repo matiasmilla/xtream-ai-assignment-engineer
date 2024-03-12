@@ -4,6 +4,7 @@ from sklearn.preprocessing import TargetEncoder, StandardScaler
 import joblib
 import numpy as np
 from sklearn.model_selection import train_test_split
+from xgboost import XGBRegressor
 
 class CleanData(luigi.Task):
     input_file = luigi.Parameter()
@@ -130,6 +131,23 @@ class FeatureScaling(luigi.Task):
         X_train.to_csv(self.X_train_file, index=False)
         X_test.to_csv(self.X_test_file, index=False)
         joblib.dump(scaler, self.scaler_file)
+
+class TrainModel(luigi.Task):
+    input_file = luigi.Parameter()
+    model_file = luigi.Parameter(default='diamonds_model.json')
+
+    def requires(self):
+        return {"features": FeatureScaling(self.input_file), "target": DataSplitting(self.input_file)}
+
+    def output(self):
+        return luigi.LocalTarget(self.model_file)
+
+    def run(self):
+        X_train = pd.read_csv(self.input()["features"]["X_train_file"].path)
+        y_train = pd.read_csv(self.input()["target"]["y_train_file"].path)
+        self.model = XGBRegressor(min_child_weight=1, max_depth=8, learning_rate=0.1, gamma=0.0)
+        self.model.fit(X_train, y_train)
+        self.model.save_model(self.model_file)
 
 if __name__ == "__main__":
     luigi.run()
