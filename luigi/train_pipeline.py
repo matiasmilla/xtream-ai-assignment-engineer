@@ -2,6 +2,7 @@ import luigi
 import pandas as pd
 from sklearn.preprocessing import TargetEncoder
 import joblib
+import numpy as np
 
 class CleanData(luigi.Task):
     input_file = luigi.Parameter()
@@ -65,6 +66,22 @@ class FeatureSelection(luigi.Task):
         features = ['size', 'color', 'clarity']
         self.df = self.df[features]
         self.df.to_csv(self.output_file, index=False)
+
+class GetTarget(luigi.Task):
+    input_file = luigi.Parameter()
+    target_name = luigi.Parameter(default='price')
+    output_file = luigi.Parameter(default='target.csv')
+
+    def requires(self):
+        return CategoricalEncoding(self.input_file)
+
+    def output(self):
+        return luigi.LocalTarget(self.output_file)
+
+    def run(self):
+        self.df = pd.read_csv(self.input().path)
+        self.target = np.log(self.df[self.target_name])
+        self.target.to_csv(self.output_file, sep=',', index=False)
 
 if __name__ == "__main__":
     luigi.run()
