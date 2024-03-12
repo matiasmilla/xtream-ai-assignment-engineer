@@ -1,6 +1,6 @@
 import luigi
 import pandas as pd
-from sklearn.preprocessing import TargetEncoder
+from sklearn.preprocessing import TargetEncoder, StandardScaler
 import joblib
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -106,6 +106,30 @@ class DataSplitting(luigi.Task):
         X_test.to_csv(self.X_test_file, index=False)
         y_train.to_csv(self.y_train_file, index=False)
         y_test.to_csv(self.y_test_file, index=False)
+
+class FeatureScaling(luigi.Task):
+    input_file = luigi.Parameter()
+    X_train_file = luigi.Parameter(default='X_train.csv')
+    X_test_file = luigi.Parameter(default='X_test.csv')
+    scaler_file = luigi.Parameter(default='scaler.sav')
+
+    def requires(self):
+        return DataSplitting(self.input_file)
+
+    def output(self):
+        return {'X_train_file': luigi.LocalTarget(self.X_train_file), 'X_test_file': luigi.LocalTarget(self.X_test_file)}
+
+    def run(self):
+        scaler = StandardScaler()
+        X_train = pd.read_csv(self.input()['X_train_file'].path)
+        X_test = pd.read_csv(self.input()['X_test_file'].path)
+        X_train = scaler.fit_transform(X_train)
+        X_train = pd.DataFrame(X_train, columns = ['size', 'color', 'clarity'])
+        X_test = scaler.fit_transform(X_test)
+        X_test = pd.DataFrame(X_test, columns = ['size', 'color', 'clarity'])
+        X_train.to_csv(self.X_train_file, index=False)
+        X_test.to_csv(self.X_test_file, index=False)
+        joblib.dump(scaler, self.scaler_file)
 
 if __name__ == "__main__":
     luigi.run()
